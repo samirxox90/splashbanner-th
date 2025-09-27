@@ -1,2 +1,355 @@
-<!DOCTYPE html><html lang="en"><head>
-  project shutdown 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Free Fire Splash Events</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #111;
+      color: #f1f1f1;
+    }
+
+    header {
+      background: linear-gradient(90deg, #ff512f, #dd2476);
+      padding: 20px;
+      text-align: center;
+      font-size: 28px;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 0 0 10px #ff004c, 0 0 20px #ff004c, 0 0 40px #ff004c;
+      letter-spacing: 2px;
+    }
+
+    .region-selector {
+      padding: 15px 20px;
+      background: #111;
+      text-align: center;
+      box-shadow: inset 0 0 10px rgba(255,0,70,0.5);
+    }
+    select {
+      padding: 12px 15px;
+      font-size: 16px;
+      background: #000;
+      color: #fff;
+      border: 2px solid #ff004c;
+      border-radius: 8px;
+      outline: none;
+      cursor: pointer;
+      box-shadow: 0 0 8px #ff004c;
+      transition: 0.3s;
+    }
+    select:hover {
+      box-shadow: 0 0 15px #ff004c, 0 0 25px #ff004c;
+    }
+
+    .section {
+      padding: 30px;
+    }
+    .section h2 {
+      margin-bottom: 15px;
+      border-left: 5px solid #ff004c;
+      padding-left: 10px;
+      font-size: 22px;
+      text-shadow: 0 0 8px #ff004c;
+    }
+
+    .card-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 25px;
+      justify-content: center;
+    }
+    .card {
+      background: #111;
+      border: 2px solid #ff004c;
+      border-radius: 12px;
+      overflow: hidden;
+      width: 280px;
+      cursor: pointer;
+      box-shadow: 0 0 12px rgba(255,0,70,0.5);
+      transition: transform 0.3s, box-shadow 0.3s;
+      position: relative;
+    }
+    .card:hover {
+      transform: translateY(-8px) scale(1.05);
+      box-shadow: 0 0 25px #ff004c, 0 0 50px #ff004c;
+    }
+    .card img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .card .info {
+      padding: 12px;
+    }
+    .card .info h3 {
+      margin: 0;
+      font-size: 18px;
+      color: #fff;
+      text-shadow: 0 0 6px #ff004c;
+    }
+    .card .info p {
+      font-size: 14px;
+      color: #ccc;
+      margin: 5px 0 0;
+    }
+
+    .copy-btn {
+      margin-top: 8px;
+      padding: 6px 10px;
+      font-size: 13px;
+      background: #ff004c;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      text-shadow: 0 0 4px #fff;
+      transition: 0.3s;
+    }
+    .copy-btn:hover {
+      background: #ff1a75;
+      box-shadow: 0 0 8px #ff004c, 0 0 16px #ff004c;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 14px;
+      background: #111;
+      color: #888;
+      border-top: 1px solid #222;
+      text-shadow: 0 0 5px #ff004c;
+    }
+
+    /* Mini Window Styles */
+    .mini-window {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #000;
+      border: 2px solid #ff004c;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 420px;
+      z-index: 1000;
+      box-shadow: 0 0 25px #ff004c, 0 0 50px #ff004c;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+    .mini-window img {
+      width: 100%;
+      height: auto;
+      border-bottom: 1px solid #222;
+    }
+    .mini-window .info {
+      padding: 15px;
+    }
+    .mini-window .info h3 {
+      margin-top: 0;
+      font-size: 20px;
+      text-shadow: 0 0 6px #ff004c;
+    }
+    .mini-window .info p {
+      font-size: 14px;
+      color: #ccc;
+    }
+    .mini-window .info a {
+      display: inline-block;
+      margin-top: 10px;
+      color: #00ffe0;
+      text-decoration: none;
+      font-weight: bold;
+      text-shadow: 0 0 10px #00ffe0;
+    }
+    .mini-close {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      font-size: 24px;
+      color: #fff;
+      cursor: pointer;
+      text-shadow: 0 0 8px #ff004c;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translate(-50%, -60%); }
+      to { opacity: 1; transform: translate(-50%, -50%); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  🎮 FF SPLASH BANNERS
+</header>
+
+<!-- REGION SELECTOR -->
+<div class="region-selector">
+  <label for="region">🌐 Choose Region: </label>
+  <select id="region" onchange="onRegionChange()">
+    <option value="SG">SINGAPORE (SG)</option>
+    <option value="IND">INDIA (IND)</option>
+    <option value="BD">BANGLADESH (BD)</option>
+    <option value="EU">EUROPE (EU)</option>
+    <option value="RU">RUSSIA-CIS (RU)</option>
+    <option value="NA">NORTH AMERICA (NA)</option>
+    <option value="PK">PAKISTAN (PK)</option>
+    <option value="US">UNITED STATES (US)</option>
+    <option value="TH">THAILAND (TH)</option>
+    <option value="ID">INDONESIA (ID)</option>
+    <option value="VN">VIETNAM (VN)</option>
+    <option value="ME">MIDDLE EAST (ME)</option>
+    <option value="BR">NORTH BRAZIL(BR)</option>
+    <option value="SAC">SOUTH AMERICA (SAC)</option>
+    <option value="TW">TAIWAN (TW)</option>
+  </select>
+</div>
+
+<!-- MINI WINDOW -->
+<div class="overlay" id="overlay" onclick="closeMiniWindow()"></div>
+<div class="mini-window" id="mini-window">
+  <div class="mini-close" onclick="closeMiniWindow()">×</div>
+  <div id="mini-content"></div>
+</div>
+
+<!-- EVENTS SECTION -->
+<div class="section">
+  <h2>🔥 Events</h2>
+  <div class="card-container" id="events-container"></div>
+</div>
+
+<!-- UPDATES SECTION -->
+<div class="section">
+  <h2>📢 Updates</h2>
+  <div class="card-container" id="updates-container"></div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  Enjoy My Website @LEAKS OF FF
+</div>
+
+<script>
+  let currentRegion = 'SG';
+
+  async function fetchData(region) {
+    const url = `https://event-web-ffm.vercel.app/get_splash?region=${region}`;
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Network response not ok');
+      const data = await response.json();
+      renderItems(data.events.items || [], 'events-container');
+      renderItems(data.updates.items || [], 'updates-container', true);
+    } catch (e) {
+      console.error(e);
+      alert('Failed to fetch data. Please try again later.');
+    }
+  }
+
+  function renderItems(items, containerId, isUpdate = false) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+
+    items.forEach(item => {
+      const title = item.Title || 'No title';
+      const banner = item.Banner || '';
+      const link = isUpdate ? item.LinkAlt : item.Link;
+      const start = item.Start ? formatUnixTime(item.Start) : null;
+      const end = item.End ? formatUnixTime(item.End) : null;
+
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      card.innerHTML = `
+        ${banner ? `<img src="${banner}" alt="${title}">` : ''}
+        <div class="info">
+          <h3>${title}</h3>
+          ${start && end ? `<p>🕒 ${start} → ${end}</p>` : ''}
+          ${banner ? `<button class="copy-btn">Copy Image Link</button>` : ''}
+        </div>
+      `;
+
+      card.addEventListener('click', () => {
+        showMiniWindow({ title, banner, link, start, end });
+      });
+
+      // Add safe copy button event
+      if (banner) {
+        const btn = card.querySelector('.copy-btn');
+        btn.addEventListener('click', (event) => {
+          event.stopPropagation(); // prevent mini-window opening
+          copyImageLink(banner);
+        });
+      }
+
+      container.appendChild(card);
+    });
+  }
+
+  function copyImageLink(url) {
+    navigator.clipboard.writeText(url)
+      .then(() => alert('Image link copied!'))
+      .catch(() => alert('Failed to copy link.'));
+  }
+
+  function showMiniWindow({ title, banner, link, start, end }) {
+    const mini = document.getElementById('mini-window');
+    const overlay = document.getElementById('overlay');
+    const content = document.getElementById('mini-content');
+
+    content.innerHTML = `
+      ${banner ? `<img src="${banner}" alt="Banner">` : ''}
+      <div class="info">
+        <h3>${title}</h3>
+        ${start && end ? `<p>🕒 ${start} → ${end}</p>` : ''}
+        ${link ? `<a href="${link}" target="_blank" rel="noopener noreferrer">Open Link</a>` : ''}
+        ${banner ? `<button class="copy-btn">Copy Image Link</button>` : ''}
+      </div>
+    `;
+
+    // Attach copy button inside mini-window
+    if (banner) {
+      const miniBtn = content.querySelector('.copy-btn');
+      miniBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        copyImageLink(banner);
+      });
+    }
+
+    mini.style.display = 'block';
+    overlay.style.display = 'block';
+  }
+
+  function closeMiniWindow() {
+    document.getElementById('mini-window').style.display = 'none';
+    document.getElementById('overlay').style.display = 'none';
+  }
+
+  function onRegionChange() {
+    const regionSelect = document.getElementById('region');
+    currentRegion = regionSelect.value;
+    fetchData(currentRegion);
+  }
+
+  function formatUnixTime(unix) {
+    const date = new Date(unix * 1000);
+    return date.toLocaleString('en-US', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  }
+
+  fetchData(currentRegion);
+</script>
+
+</body>
+</html>
