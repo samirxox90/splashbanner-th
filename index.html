@@ -180,6 +180,47 @@
       from { opacity: 0; transform: translate(-50%, -60%); }
       to { opacity: 1; transform: translate(-50%, -50%); }
     }
+
+    /* Countdown styles (top-right corner) */
+    .countdown {
+      position: fixed;
+      top: 20px;
+      right: 20px; /* right corner */
+      background: rgba(0,0,0,0.6);
+      border: 2px solid #00ffe0;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 18px;
+      letter-spacing: 1px;
+      box-shadow: 0 0 12px #00ffe0, 0 0 24px rgba(0,255,224,0.15);
+      z-index: 1100; /* above mini-window */
+      color: #00ffe0;
+      text-shadow: 0 0 8px rgba(0,255,224,0.9);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .countdown .label {
+      font-size: 12px;
+      color: #cffff6;
+      opacity: 0.9;
+      text-shadow: none;
+      font-weight: 600;
+    }
+    .countdown .time {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      font-size: 20px;
+      background: linear-gradient(90deg, rgba(0,255,224,0.07), rgba(0,0,0,0));
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+    .countdown.finished {
+      border-color: #ff004c;
+      color: #ff004c;
+      box-shadow: 0 0 12px #ff004c, 0 0 24px rgba(255,0,76,0.12);
+      text-shadow: 0 0 6px rgba(255,0,76,0.9);
+    }
   </style>
 </head>
 <body>
@@ -187,6 +228,12 @@
 <header>
   🎮 FF SPLASH BANNERS
 </header>
+
+<!-- Countdown (54 minutes) -->
+<div class="countdown" id="countdown" role="status" aria-live="polite">
+  <div class="label">Project Shutdown</div>
+  <div class="time" id="countdown-time">50:00</div>
+</div>
 
 <!-- REGION SELECTOR -->
 <div class="region-selector">
@@ -349,6 +396,48 @@
   }
 
   fetchData(currentRegion);
+
+  /* ---------- 54-Minute Countdown Logic ---------- */
+  (function() {
+    // start with exactly 54 minutes (54 * 60 seconds)
+    const START_SECONDS = 54 * 60;
+    let remaining = START_SECONDS;
+    const display = document.getElementById('countdown-time');
+    const container = document.getElementById('countdown');
+
+    function formatTime(totalSeconds) {
+      const mins = Math.floor(totalSeconds / 60);
+      const secs = totalSeconds % 60;
+      const mm = String(mins).padStart(2, '0');
+      const ss = String(secs).padStart(2, '0');
+      return `${mm}:${ss}`;
+    }
+
+    function tick() {
+      if (remaining <= 0) {
+        display.textContent = '00:00';
+        container.classList.add('finished');
+        // when finished you can optionally refresh data automatically
+        // fetchData(currentRegion); // <-- uncomment if you want auto-refresh on finish
+        clearInterval(timerId);
+        return;
+      }
+      remaining -= 1;
+      display.textContent = formatTime(remaining);
+    }
+
+    // initialize
+    display.textContent = formatTime(remaining);
+    const timerId = setInterval(tick, 1000);
+
+    // Expose small controls for debugging / optional reset (not visible by default)
+    window.__countdown = {
+      reset: (minutes = 54) => { remaining = minutes * 60; display.textContent = formatTime(remaining); container.classList.remove('finished'); },
+      stop: () => clearInterval(timerId),
+      getRemaining: () => remaining
+    };
+  })();
+
 </script>
 
 </body>
