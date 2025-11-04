@@ -1,1 +1,501 @@
-Error 404
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FF Link Checker</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+    <!-- Use Inter font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+        }
+        /* Custom spinner animation */
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-left-color: #4f46e5;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .persistence-status {
+            font-size: 0.875rem; /* text-sm */
+            font-weight: 600; /* font-semibold */
+            padding: 0.75rem;
+            margin-top: 1rem;
+            border-radius: 0.5rem;
+            display: block;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 h-full text-gray-900">
+    <div class="container mx-auto p-4 md:p-8 max-w-2xl">
+        <header class="mb-10 pt-4">
+            <h1 class="text-4xl font-extrabold text-indigo-700 tracking-tight">Reliable Link Checker</h1>
+            <p class="text-lg text-gray-600 mt-2">Monitor your URLs. Your data is now saved permanently.</p>
+            <!-- Display User ID and Auth Status -->
+            <div id="user-info">Auth Status: Loading...</div>
+        </header>
+
+        <!-- Add Link Form -->
+        <section class="mb-10 bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+            <h2 class="text-2xl font-bold mb-5 text-gray-800">Add New Link</h2>
+            <form id="add-link-form" class="flex flex-col gap-4">
+                <input type="text" id="link-title-input" placeholder="Link Title (e.g., My Portfolio)" class="p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-3 focus:ring-indigo-500 transition duration-150" required>
+                
+                <input type="url" id="link-url-input" placeholder="URL (e.g., https://example.com)" class="p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-3 focus:ring-indigo-500 transition duration-150" required>
+                
+                <button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-bold text-lg hover:bg-indigo-700 transition duration-200 shadow-md transform hover:scale-[1.01]">
+                    Add Link
+                </button>
+            </form>
+            <p id="error-message" class="text-red-500 text-sm mt-3 font-medium"></p>
+        </section>
+
+        <!-- Monitored Links List -->
+        <section>
+            <h2 class="text-2xl font-bold mb-5 text-gray-800">Monitored Links</h2>
+            <div id="link-list" class="space-y-4">
+                <!-- Links will be dynamically inserted here -->
+                <p id="loading-links" class="text-gray-500 p-4 bg-white rounded-lg shadow-sm">Loading saved links...</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // --- Firebase Imports ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInAnonymously, 
+            signInWithCustomToken, 
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            addDoc, 
+            updateDoc, 
+            deleteDoc, 
+            collection, 
+            onSnapshot,
+            setLogLevel
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        
+        // =====================================================================
+        // CONFIGURATION: Set up for maximum portability (Host Anywhere)
+        // =====================================================================
+        // Use a generic config as a default fallback for hosting outside Canvas.
+        const DEFAULT_FIREBASE_CONFIG = {
+            apiKey: "AIzaSyBQlRyL0VK7R3-vU5nPFA423l3fDjaFJ0M",
+            authDomain: "my-link-checker.firebaseapp.com",
+            projectId: "my-link-checker", // Used as fallback appId
+        };
+        const DEFAULT_APP_ID = "my-link-checker"; // Must match projectId above
+
+        let firebaseConfig;
+        let appId;
+
+        // Prioritize internal environment variables if available
+        if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+            try {
+                firebaseConfig = JSON.parse(__firebase_config);
+                appId = typeof __app_id !== 'undefined' ? __app_id : DEFAULT_APP_ID;
+            } catch (e) {
+                // Fallback if parsing fails
+                firebaseConfig = DEFAULT_FIREBASE_CONFIG;
+                appId = DEFAULT_APP_ID;
+            }
+        } else {
+            // Use the hardcoded default for external hosting
+            firebaseConfig = DEFAULT_FIREBASE_CONFIG;
+            appId = DEFAULT_APP_ID;
+        }
+        
+        // --- Global Variables ---
+        let db;
+        let auth;
+        let userId;
+        let linksCollectionRef;
+        const linksContainer = document.getElementById('link-list');
+        const addLinkForm = document.getElementById('add-link-form');
+        const linkTitleInput = document.getElementById('link-title-input');
+        const linkUrlInput = document.getElementById('link-url-input');
+        const loadingLinks = document.getElementById('loading-links');
+        const errorMessage = document.getElementById('error-message');
+        const userInfoDisplay = document.getElementById('user-info');
+
+        // *** CRITICAL PERSISTENCE FIX PATH ***
+        // By using the PUBLIC path, the storage location is static and does not depend on the volatile userId.
+        const PUBLIC_COLLECTION_PATH = `artifacts/${appId}/public/data/links`;
+
+
+        // --- Network Helper Functions ---
+        const MAX_RETRIES = 3;
+        const DELAY_MS = 1000;
+
+        /**
+         * Retries a fetch request using exponential backoff.
+         */
+        async function fetchWithRetry(url, options, retries = 0) {
+            try {
+                return await fetch(url, options);
+            } catch (error) {
+                if (retries < MAX_RETRIES - 1) { 
+                    const delay = DELAY_MS * (2 ** retries);
+                    console.warn(`Fetch attempt ${retries + 1} failed. Retrying in ${delay}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    return fetchWithRetry(url, options, retries + 1);
+                }
+                throw error;
+            }
+        }
+
+        /**
+         * Fetches the link status using a CORS proxy.
+         */
+        async function checkLinkStatus(url) {
+            // FIX: Switched to corsproxy.io for better reliability.
+            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 20000); 
+
+            let status = "Not Working"; // Default to failure
+
+            try {
+                const response = await fetchWithRetry(proxyUrl, { signal: controller.signal }); 
+                clearTimeout(timeout);
+                
+                // For corsproxy.io, response.ok directly reflects the target URL's 2xx status.
+                if (response.ok) { 
+                    status = "Working";
+                } else {
+                    // Target URL returned a 4xx or 5xx status code.
+                    const httpStatus = response.status || "Unknown";
+                    status = `Not Working (${httpStatus})`;
+                }
+            } catch (error) {
+                clearTimeout(timeout);
+                // Refined error logging for clarity
+                console.error("Link check failed completely (Network/Proxy/CORS issue):", url, error);
+                status = "Check Failed (Network Error)"; 
+            }
+            return { status };
+        }
+
+
+        /**
+         * Renders a single link item (full row) based on the Firestore data.
+         */
+        function renderLink(link) {
+            const linkId = link.id;
+            const url = link.url;
+            const title = link.title || 'Untitled Link';
+            const status = link.status || 'Checking...'; 
+
+            const existingItem = document.getElementById(`link-item-${linkId}`);
+            
+            // --- Status Colors and Text (UPDATED FOR MAXIMUM RED CONTRAST) ---
+            let statusClass = 'text-gray-500';
+            let statusIcon = '<div class="spinner"></div>';
+
+            if (status.includes("Working")) { 
+                statusClass = 'text-green-700';
+                statusIcon = '<span class="h-3 w-3 bg-green-700 rounded-full shadow-md"></span>';
+            } else if (status.includes("Not Working") || status.includes("Failed")) { 
+                // This condition correctly catches "Not Working (XML Error)" and sets it to red.
+                statusClass = 'text-red-700'; // Using 700 for maximum visibility
+                statusIcon = '<span class="h-3 w-3 bg-red-700 rounded-full shadow-md"></span>'; // Icon matches text
+            }
+
+            const item = existingItem || document.createElement('div');
+            item.id = `link-item-${linkId}`;
+            item.className = "bg-white p-5 rounded-xl shadow-lg flex flex-wrap items-center justify-between gap-4 border-l-4 border-indigo-500"; 
+
+            item.innerHTML = `
+                <div class="flex-grow min-w-0">
+                    <p class="text-xl font-semibold text-gray-900 truncate" title="${title}">${title}</p>
+                    <a href="${url}" target="_blank" rel="noopener noreferrer" class="text-base text-indigo-600 truncate block hover:underline" title="${url}">${url}</a>
+                </div>
+                
+                <div class="flex items-center gap-4 w-full sm:w-auto flex-shrink-0 mt-3 sm:mt-0">
+                    <!-- Status Indicator -->
+                    <div id="status-${linkId}" class="flex items-center gap-2 font-bold ${statusClass} flex-shrink-0">
+                        ${statusIcon}
+                        <span>${status}</span>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <button data-id="${linkId}" data-url="${url}" class="recheck-btn text-base font-medium text-indigo-600 hover:text-indigo-800 flex-shrink-0 transition duration-150 p-1 rounded-md hover:bg-indigo-50">
+                        Re-check
+                    </button>
+                    <button data-id="${linkId}" class="remove-btn text-base font-medium text-red-700 hover:text-red-800 flex-shrink-0 transition duration-150 p-1 rounded-md hover:bg-red-50">
+                        Remove
+                    </button>
+                </div>
+            `;
+            
+            return item;
+        }
+
+        /**
+         * Normalizes a URL, adding 'https://' if no protocol is present.
+         */
+        function normalizeUrl(url) {
+            let normalized = url.trim();
+            if (!/^https?:\/\//i.test(normalized)) {
+                normalized = 'https://' + normalized;
+            }
+            return normalized;
+        }
+
+        // --- Event Handlers ---
+
+        /**
+         * Handles adding a new link, fetching status, and updating Firestore.
+         */
+        async function handleAddLink(e) {
+            e.preventDefault();
+            errorMessage.textContent = '';
+            
+            const title = linkTitleInput.value.trim();
+            const url = linkUrlInput.value.trim();
+
+            if (!title) {
+                errorMessage.textContent = 'Please enter a Link Title.';
+                return;
+            }
+            if (!url) {
+                errorMessage.textContent = 'Please enter a URL.';
+                return;
+            }
+            
+            let normalizedUrl;
+            try {
+                normalizedUrl = normalizeUrl(url);
+                new URL(normalizedUrl); 
+            } catch (_) {
+                errorMessage.textContent = 'Please enter a valid URL (e.g., https://example.com)';
+                return;
+            }
+
+            if (!linksCollectionRef) {
+                errorMessage.textContent = "Database not initialized. Please refresh.";
+                return;
+            }
+
+            try {
+                const linkData = {
+                    title: title,
+                    url: normalizedUrl,
+                    createdAt: new Date(),
+                    status: 'Checking...', 
+                };
+
+                const newDocRef = await addDoc(linksCollectionRef, linkData);
+                
+                // Clear inputs
+                linkTitleInput.value = '';
+                linkUrlInput.value = '';
+                
+                // Fetch status asynchronously
+                const { status } = await checkLinkStatus(normalizedUrl);
+                
+                // Update document with the fetched status 
+                try {
+                    await updateDoc(newDocRef, {
+                        status: status,
+                    });
+                } catch (writeError) {
+                    console.error("Failed to update status in Firestore:", writeError);
+                }
+
+            } catch (error) {
+                console.error("Error adding link to Firestore: ", error);
+                errorMessage.textContent = 'Failed to save link. Check console for details.';
+            }
+        }
+
+        /**
+         * Handles clicks on "Remove" or "Re-check" buttons (using event delegation).
+         */
+        async function handleListClick(e) {
+            const target = e.target;
+            
+            const docPath = PUBLIC_COLLECTION_PATH; // Always use the public path
+
+            // Handle Remove
+            if (target.classList.contains('remove-btn')) {
+                const id = target.dataset.id;
+                if (!id) return;
+                
+                try {
+                    await deleteDoc(doc(db, docPath, id));
+                } catch (error) {
+                    console.error("Error removing document: ", error);
+                }
+            }
+
+            // Handle Re-check
+            if (target.classList.contains('recheck-btn')) {
+                const id = target.dataset.id;
+                const url = target.dataset.url;
+                if (!id || !url) return;
+                
+                // Optimistically update the status to "Checking" immediately
+                const linkDocRef = doc(db, docPath, id);
+                await updateDoc(linkDocRef, {
+                    status: 'Checking...',
+                });
+
+                // Fetch new status
+                const { status } = await checkLinkStatus(url);
+                
+                // Update Firestore document with new status
+                await updateDoc(linkDocRef, {
+                    status: status,
+                });
+            }
+        }
+
+        /**
+         * Sets up the real-time listener for links.
+         */
+        function setupSnapshotListener() {
+            if (!linksCollectionRef) {
+                console.error("linksCollectionRef is not initialized");
+                return;
+            }
+
+            onSnapshot(linksCollectionRef, (snapshot) => {
+                loadingLinks.style.display = 'none';
+                
+                const dbIds = new Set(snapshot.docs.map(doc => doc.id));
+                const dbLinks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                // Remove items from DOM that no longer exist in the DB
+                linksContainer.querySelectorAll('[id^="link-item-"]').forEach(item => {
+                    const id = item.id.replace('link-item-', '');
+                    if (!dbIds.has(id)) {
+                        item.remove();
+                    }
+                });
+
+                if (snapshot.empty) {
+                    linksContainer.innerHTML = '<p class="text-gray-500 p-4 bg-white rounded-lg shadow-sm">No links added yet. Add one above!</p>';
+                    return;
+                }
+
+                // Sort by creation date descending (newest first)
+                dbLinks.sort((a, b) => {
+                    const timeA = a.createdAt?.toDate()?.getTime() || 0;
+                    const timeB = b.createdAt?.toDate()?.getTime() || 0;
+                    return timeB - timeA;
+                });
+
+                // Clear and rebuild the list for correct order and clean refresh
+                // This is simpler and more reliable than DOM manipulation
+                linksContainer.innerHTML = ''; 
+
+                dbLinks.forEach(link => {
+                    const item = renderLink(link);
+                    linksContainer.appendChild(item); 
+                });
+
+
+            }, (error) => {
+                console.error("Error getting snapshot: ", error);
+                loadingLinks.textContent = 'Error loading links.';
+            });
+        }
+        
+        // --- Initialization ---
+        async function initialize() {
+            if (!firebaseConfig.apiKey) {
+                console.error("Firebase config is invalid. App will not initialize.");
+                if (loadingLinks) {
+                    loadingLinks.textContent = 'App configuration error. Cannot load links.';
+                }
+                addLinkForm.style.display = 'none';
+                return;
+            }
+
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                setLogLevel('Debug');
+
+                // Sign-in logic
+                if (typeof __initial_auth_token !== 'undefined') {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                // Set up the Authentication Listener
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        
+                        // Set the collection reference to the public path
+                        linksCollectionRef = collection(db, PUBLIC_COLLECTION_PATH);
+                        
+                        // Set the Auth Status message
+                        const authStatus = user.isAnonymous 
+                            ? `<span class="bg-indigo-600 text-white persistence-status">Storage: Public Collection (Data is now persistent)</span>`
+                            : `<span class="bg-green-600 text-white persistence-status">Storage: Persistent User (Data is saved)</span>`;
+
+                        userInfoDisplay.innerHTML = `${authStatus}<div class="text-xs mt-1 text-gray-500 font-mono break-all">Current User ID: ${userId}</div>`;
+                        
+                        // Setup event listeners
+                        addLinkForm.addEventListener('submit', handleAddLink);
+                        linksContainer.addEventListener('click', handleListClick);
+
+                        // Start listening for saved data
+                        setupSnapshotListener();
+                    } else {
+                        console.log("No user signed in yet.");
+                        if (loadingLinks) {
+                            loadingLinks.textContent = 'Waiting for user authentication...';
+                        }
+                    }
+                });
+
+            } catch (error)
+            {
+                console.error("Firebase initialization failed:", error);
+                if (loadingLinks) {
+                    loadingLinks.textContent = `Error initializing the app: ${error.message}`;
+                }
+            }
+        }
+        
+        // Start the application
+        initialize();
+
+    </script>
+</body>
+</html>
+
