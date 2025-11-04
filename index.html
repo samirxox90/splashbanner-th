@@ -147,7 +147,7 @@
         const userInfoDisplay = document.getElementById('user-info');
 
         // *** CRITICAL PERSISTENCE FIX PATH ***
-        // By using the PUBLIC path, the storage location is static and does not depend on the volatile userId.
+        // This path relies on the appId and is what your security rule must match.
         const PUBLIC_COLLECTION_PATH = `artifacts/${appId}/public/data/links`;
 
 
@@ -333,7 +333,16 @@
 
             } catch (error) {
                 console.error("Error adding link to Firestore: ", error);
-                errorMessage.textContent = 'Failed to save link. Check console for details.';
+                // Re-added explicit error guidance for ADD operations
+                 if (error.code === "permission-denied" || error.message.includes("permissions")) {
+                    errorMessage.innerHTML = `
+                        Failed to save link. <br>
+                        Check your Firebase Security Rules: they must allow <strong>write</strong> access to 
+                        the collection path: <strong><code>${PUBLIC_COLLECTION_PATH}</code></strong>.
+                    `;
+                } else {
+                    errorMessage.textContent = 'Failed to save link. Check console for details.';
+                }
             }
         }
 
@@ -343,7 +352,7 @@
         async function handleListClick(e) {
             const target = e.target;
             
-            const docPath = PUBLIC_COLLECTION_PATH; // Always use the public path
+            const docPath = PUBLIC_COLLECTION_PATH; 
 
             // Handle Remove
             if (target.classList.contains('remove-btn')) {
@@ -354,6 +363,14 @@
                     await deleteDoc(doc(db, docPath, id));
                 } catch (error) {
                     console.error("Error removing document: ", error);
+                     // Re-added explicit error guidance for DELETE operations
+                    if (error.code === "permission-denied" || error.message.includes("permissions")) {
+                        errorMessage.innerHTML = `
+                            Failed to remove link. <br>
+                            Check your Firebase Security Rules: they must allow <strong>delete</strong> access to 
+                            the collection path: <strong><code>${PUBLIC_COLLECTION_PATH}</code></strong>.
+                        `;
+                    }
                 }
             }
 
@@ -363,19 +380,31 @@
                 const url = target.dataset.url;
                 if (!id || !url) return;
                 
-                // Optimistically update the status to "Checking" immediately
                 const linkDocRef = doc(db, docPath, id);
-                await updateDoc(linkDocRef, {
-                    status: 'Checking...',
-                });
+                try {
+                    // Optimistically update the status to "Checking" immediately
+                    await updateDoc(linkDocRef, {
+                        status: 'Checking...',
+                    });
 
-                // Fetch new status
-                const { status } = await checkLinkStatus(url);
-                
-                // Update Firestore document with new status
-                await updateDoc(linkDocRef, {
-                    status: status,
-                });
+                    // Fetch new status
+                    const { status } = await checkLinkStatus(url);
+                    
+                    // Update Firestore document with new status
+                    await updateDoc(linkDocRef, {
+                        status: status,
+                    });
+                } catch (error) {
+                    console.error("Error updating document status: ", error);
+                     // Re-added explicit error guidance for UPDATE operations
+                    if (error.code === "permission-denied" || error.message.includes("permissions")) {
+                        errorMessage.innerHTML = `
+                            Failed to re-check link. <br>
+                            Check your Firebase Security Rules: they must allow <strong>update</strong> access to 
+                            the collection path: <strong><code>${PUBLIC_COLLECTION_PATH}</code></strong>.
+                        `;
+                    }
+                }
             }
         }
 
@@ -415,7 +444,6 @@
                 });
 
                 // Clear and rebuild the list for correct order and clean refresh
-                // This is simpler and more reliable than DOM manipulation
                 linksContainer.innerHTML = ''; 
 
                 dbLinks.forEach(link => {
@@ -426,7 +454,23 @@
 
             }, (error) => {
                 console.error("Error getting snapshot: ", error);
-                loadingLinks.textContent = 'Error loading links.';
+                // *** CRITICAL: Re-add detailed error guidance for READ operations ***
+                if (error.code === "permission-denied" || error.message.includes("permissions")) {
+                    loadingLinks.innerHTML = `
+                        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg font-medium shadow-md">
+                            <p class="font-bold">Firebase Security Rules Error: Permission Denied</p>
+                            <p class="mt-2 text-sm">You must allow <strong>read</strong> access for authenticated users to the specific path: 
+                            <br><strong><code>${PUBLIC_COLLECTION_PATH}</code></strong>
+                            <br>
+                            <br><strong>REQUIRED RULE:</strong>
+                            <br><code>match /artifacts/{appId}/public/data/links/{linkId} {</code>
+                            <br><code>&nbsp;&nbsp;allow read, write: if request.auth != null;</code>
+                            <br><code>}</code></p>
+                        </div>
+                    `;
+                } else {
+                    loadingLinks.textContent = 'Error loading links.';
+                }
             });
         }
         
@@ -462,12 +506,13 @@
                         // Set the collection reference to the public path
                         linksCollectionRef = collection(db, PUBLIC_COLLECTION_PATH);
                         
-                        // Set the Auth Status message
+                        // Set the Auth Status message, including the collection path for debugging
                         const authStatus = user.isAnonymous 
-                            ? `<span class="bg-indigo-600 text-white persistence-status">Storage: Public Collection (Data is now persistent)</span>`
+                            ? `<span class="bg-indigo-600 text-white persistence-status">Storage: Public Collection (Data is persistent)</span>`
                             : `<span class="bg-green-600 text-white persistence-status">Storage: Persistent User (Data is saved)</span>`;
 
-                        userInfoDisplay.innerHTML = `${authStatus}<div class="text-xs mt-1 text-gray-500 font-mono break-all">Current User ID: ${userId}</div>`;
+                        userInfoDisplay.innerHTML = `${authStatus}<div class="text-xs mt-1 text-gray-500 font-mono break-all">Current User ID: ${userId}</div>
+                        <div class="text-xs mt-1 text-gray-500 font-mono break-all">Collection Path: ${PUBLIC_COLLECTION_PATH}</div>`;
                         
                         // Setup event listeners
                         addLinkForm.addEventListener('submit', handleAddLink);
@@ -498,4 +543,3 @@
     </script>
 </body>
 </html>
-
