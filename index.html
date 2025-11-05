@@ -710,9 +710,34 @@
                 await checkAndUpdateLinkStatus(id, url);
             }
         }
+        
+        // --- NEW: Function to check all links on initial load ---
+        /**
+         * Executes a one-time full check on ALL links when the page loads/user is authenticated.
+         */
+        async function autoCheckAllLinksOnLoad() {
+            console.log(`[Initial Load Check] Starting full check for ${linksDataCache.length} links...`);
+
+            if (linksDataCache.length === 0) {
+                console.log("[Initial Load Check] No links found to check.");
+                return;
+            }
+            
+            // Execute checks sequentially to avoid overwhelming the proxy/network
+            for (const link of linksDataCache) {
+                console.log(`[Initial Load Check] Checking: ${link.title} (${link.id})`);
+                // Check ALL links, even if they are currently marked 'Working'
+                await checkAndUpdateLinkStatus(link.id, link.url); 
+                // Small delay to space out requests
+                await new Promise(resolve => setTimeout(resolve, 500)); 
+            }
+            console.log("[Initial Load Check] Full check complete.");
+        }
+
 
         /**
          * Iterates through cached links and re-checks those that are NOT 'Working'.
+         * This function is used for the periodic 5-minute check.
          */
         async function autoRecheckNonWorkingLinks() {
             console.log(`[Auto-Recheck] Starting periodic check for ${linksDataCache.length} links...`);
@@ -750,18 +775,6 @@
             console.log("[Auto-Recheck] Periodic check complete.");
         }
         
-        /**
-         * Sets up the continuous timer for auto-rechecking.
-         */
-        function startAutoRecheckLoop() {
-            // Run the first check shortly after init
-            setTimeout(autoRecheckNonWorkingLinks, 10000); 
-            // Then set the recurring interval
-            setInterval(autoRecheckNonWorkingLinks, AUTO_RECHECK_INTERVAL);
-            console.log(`[Auto-Recheck] Auto-recheck loop started. Interval: ${AUTO_RECHECK_INTERVAL / 1000} seconds.`);
-        }
-
-
         /**
          * Sets up the real-time listener for links.
          */
@@ -896,11 +909,16 @@
                         addLinkForm.addEventListener('submit', handleAddLink);
                         linksContainer.addEventListener('click', handleListClick);
 
-                        // Start listening for saved data
+                        // Start listening for saved data (updates linksDataCache)
                         setupSnapshotListener();
                         
-                        // Start the automatic re-check loop
-                        startAutoRecheckLoop();
+                        // 1. Immediately run a FULL check on all links on load (5s delay for Firestore load)
+                        setTimeout(autoCheckAllLinksOnLoad, 5000); 
+
+                        // 2. Set up the recurring 5-minute check for ONLY non-working links
+                        setInterval(autoRecheckNonWorkingLinks, AUTO_RECHECK_INTERVAL);
+                        console.log(`[Auto-Recheck] Periodic check loop started. Interval: ${AUTO_RECHECK_INTERVAL / 1000} seconds.`);
+
                     } else {
                         console.log("No user signed in yet.");
                         if (loadingLinks) {
