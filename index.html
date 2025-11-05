@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FF Link Checker</title>
+    <title>FF Link Checker TH</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -23,10 +23,11 @@
             min-height: 100vh;
         }
         
-        /* --- Title Animation Styles --- */
+        /* --- Title Animation Styles (Thai Flag Theme: Blue/Red) --- */
         .animated-title {
             /* Ensures the background of the text shines */
-            background: linear-gradient(90deg, #b8c2ff 0%, #4f46e5 10%, #4f46e5 90%, #b8c2ff 100%);
+            /* Using Thai Blue (#241F4D) and Red (#A51931) for the shine effect */
+            background: linear-gradient(90deg, #A51931 0%, #241F4D 10%, #241F4D 90%, #A51931 100%);
             background-size: 200% 100%;
             -webkit-background-clip: text;
             background-clip: text;
@@ -69,29 +70,29 @@
             100% { background-position: -200% 0; }
         }
 
-        /* Custom spinner animation */
+        /* Custom spinner animation (Thai Blue) */
         .spinner {
             border: 3px solid rgba(255, 255, 255, 0.3);
-            border-left-color: #4f46e5;
+            border-left-color: #241F4D; /* Thai Blue */
             border-radius: 50%;
             width: 18px;
             height: 18px;
             animation: spin 1s linear infinite;
         }
         
-        /* Custom spinner for the status badge */
+        /* Custom spinner for the status badge (Thai Blue) */
         .spinner.badge-spinner {
             width: 1rem; /* 16px */
             height: 1rem; /* 16px */
             border-width: 2px;
-            border-left-color: #4f46e5; /* indigo-600 */
+            border-left-color: #241F4D; /* Thai Blue */
         }
 
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
         
-        /* CSS for the pulsating working badge effect */
+        /* CSS for the pulsating working badge effect (Green - kept for universal success) */
         .pulse-shadow-success {
             /* green-500: rgba(16, 185, 129, 0.7) */
             box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); 
@@ -120,35 +121,61 @@
             text-align: center;
         }
         
-        /* Style for the re-checking button state */
+        /* Style for the re-checking button state (Thai Blue) */
         .rechecking-btn {
-            background-color: #eef2ff; /* indigo-50 */
-            color: #4f46e5; /* indigo-600 */
-            border-color: #a5b4fc; /* indigo-300 */
+            background-color: #d9dee8; /* Light Thai Blue/Grey */
+            color: #241F4D; /* Thai Blue */
+            border-color: #241F4D; /* Thai Blue */
             cursor: not-allowed;
             display: flex;
             align-items: center;
             justify-content: center;
             pointer-events: none; /* Ensure no interaction while disabled */
         }
+        
+        /* --- Notification Styles --- */
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 300px;
+        }
+
+        .notification {
+            background-color: #10b981; /* green-500 */
+            color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transform: translateX(100%);
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+            margin-top: 10px; /* Space between multiple notifications */
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
     </style>
 </head>
 <body class="bg-gray-50 h-full text-gray-900">
     <div class="container mx-auto p-4 md:p-8 max-w-2xl">
         <header class="mb-10 pt-4">
-            <h1 class="text-4xl font-extrabold tracking-tight animated-title">FF Link Checker</h1>
-            <p class="text-lg text-gray-600 mt-2">Note :- Only You Can See Your Added Links.</p>
+            <h1 class="text-4xl font-extrabold tracking-tight animated-title">FF Link Checker TH</h1>
+            <p class="text-lg text-gray-600 mt-2">
             <div id="user-info">Auth Status: Loading...</div>
         </header>
 
         <section class="mb-10 bg-white p-6 rounded-xl shadow-lg border border-gray-200">
             <h2 class="text-2xl font-bold mb-5 text-gray-800">Add New Link</h2>
             <form id="add-link-form" class="flex flex-col gap-4">
-                <input type="text" id="link-title-input" placeholder="Link Title (e.g., Darkness Ring)" class="p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-3 focus:ring-indigo-500 transition duration-150" required>
+                <input type="text" id="link-title-input" placeholder="Link Title (e.g., Darkness Ring)" class="p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-3 focus:ring-[#241F4D] transition duration-150" required>
                 
-                <input type="url" id="link-url-input" placeholder="URL (e.g., https://example.com)" class="p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-3 focus:ring-indigo-500 transition duration-150" required>
+                <input type="url" id="link-url-input" placeholder="URL (e.g., https://example.com)" class="p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-3 focus:ring-[#241F4D] transition duration-150" required>
                 
-                <button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-bold text-lg hover:bg-indigo-700 transition duration-200 shadow-md transform hover:scale-[1.01]">
+                <button type="submit" class="bg-[#241F4D] text-white px-6 py-3 rounded-lg font-bold text-lg hover:bg-[#3d336a] transition duration-200 shadow-md transform hover:scale-[1.01]">
                     Add Link
                 </button>
             </form>
@@ -174,7 +201,7 @@
             <h3 class="text-xl font-bold text-red-600 mb-3">Confirm Deletion</h3>
             <p class="text-gray-700 mb-6">
                 Do you want to remove the link: 
-                <span id="modal-link-title" class="font-semibold italic text-indigo-700 break-words"></span>?
+                <span id="modal-link-title" class="font-semibold italic text-[#241F4D] break-words"></span>?
             </p>
             <div class="flex justify-end space-x-3">
                 <button id="cancel-btn" class="px-4 py-2 text-gray-600 bg-gray-200 rounded-lg hover:bg-gray-300 font-medium transition duration-150">
@@ -186,6 +213,9 @@
             </div>
         </div>
     </div>
+    
+    <div id="notification-container" class="notification-container">
+        </div>
 
     <script type="module">
         // --- Firebase Imports ---
@@ -204,6 +234,7 @@
             deleteDoc, 
             collection, 
             onSnapshot,
+            getDoc,
             setLogLevel
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -213,11 +244,17 @@
         // =====================================================================
         // Use a generic config as a default fallback for hosting outside Canvas.
         const DEFAULT_FIREBASE_CONFIG = {
-            apiKey: "AIzaSyBQlRyL0VK7R3-vU5nPFA423l3fDjaFJ0M",
-            authDomain: "my-link-checker.firebaseapp.com",
-            projectId: "my-link-checker", // Used as fallback appId
+            // UPDATED CONFIGURATION START
+            apiKey: "AIzaSyDwR3uCH8jRQzjqp0SM_Vk1YmX0e2C7aoA",
+            authDomain: "my-link-checker-th-839fe.firebaseapp.com",
+            projectId: "my-link-checker-th-839fe", // Used as fallback appId
+            storageBucket: "my-link-checker-th-839fe.firebasestorage.app",
+            messagingSenderId: "606190159603",
+            appId: "1:606190159603:web:5d13459d1a29a30e79d986",
+            // measurementId is not needed for the core app functionality and is omitted for brevity.
+            // UPDATED CONFIGURATION END
         };
-        const DEFAULT_APP_ID = "my-link-checker"; // Must match projectId above
+        const DEFAULT_APP_ID = "my-link-checker-th-839fe"; // Must match projectId above
 
         let firebaseConfig;
         let appId;
@@ -262,10 +299,53 @@
         const modalLinkTitle = document.getElementById('modal-link-title');
         const confirmBtn = document.getElementById('confirm-btn');
         const cancelBtn = document.getElementById('cancel-btn');
+        
+        // Notification element
+        const notificationContainer = document.getElementById('notification-container');
 
         // This path is still used internally but is no longer displayed.
         const PUBLIC_COLLECTION_PATH = `artifacts/${appId}/public/data/links`;
 
+
+        // --- Notification Function ---
+        /**
+         * Shows a temporary notification pop-up.
+         * @param {string} title - The title of the link.
+         * @param {string} message - The notification message.
+         */
+        function showNotification(title, message) {
+            // Create the notification element
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            // Added checkmark icon (tailwind/heroicons style)
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <div>
+                        <p class="font-bold">${title}</p>
+                        <p class="text-sm">${message}</p>
+                    </div>
+                </div>
+            `;
+            
+            // Append to container
+            notificationContainer.prepend(notification); // Use prepend for newest on top
+            
+            // Use setTimeout to trigger the transition (must wait for the element to be in the DOM)
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 10); 
+
+            // Set timeout for removal (e.g., 5 seconds)
+            setTimeout(() => {
+                notification.classList.remove('show');
+                
+                // Wait for the exit transition to finish before removing from DOM
+                setTimeout(() => {
+                    notification.remove();
+                }, 500); // Must match the CSS transition duration
+            }, 5000); // Show for 5 seconds
+        }
 
         // --- Confirmation Modal Functions ---
 
@@ -411,6 +491,8 @@
             const title = link.title || 'Untitled Link';
             const status = link.status || 'Checking...'; 
             const workingAt = link.workingAt; 
+            // NEW: Starred status
+            const isStarred = link.isStarred || false;
 
             const existingItem = document.getElementById(`link-item-${linkId}`);
             
@@ -431,12 +513,11 @@
                 // Success case: Apply green badge with pulsing effect
                 badgeClasses += ' bg-green-100 text-green-700 border border-green-700 pulse-shadow-success';
             } 
-            // 3. Default (Checking...)
+            // 3. Default (Checking...) - Thai Blue Theme
             else { 
-                // Checking state: Apply indigo/gray badge with spinner
-                badgeClasses += ' bg-indigo-100 text-indigo-700 border border-indigo-700';
-                // If status is "Checking...", show the spinner
-                statusText = `<div class="spinner badge-spinner !border-l-indigo-700"></div> ${status}`; 
+                badgeClasses += ' bg-[#d9dee8] text-[#241F4D] border-[#241F4D]'; 
+                // If status is "Checking...", show the spinner (Thai Blue)
+                statusText = `<div class="spinner badge-spinner !border-l-[#241F4D]"></div> ${status}`; 
             }
 
             // --- Global Time Display Logic ---
@@ -444,14 +525,15 @@
                 ? `<div class="text-xs text-gray-500 font-mono mt-1 whitespace-nowrap">Working since: ${formatGlobalTime(workingAt)}</div>`
                 : '';
                 
-            // --- Re-check Button Logic ---
+            // --- Re-check Button Logic (Thai Red Theme) ---
             // The button will be disabled and styled as rechecking if the process is active
             const recheckBtnClasses = isChecking 
                 ? 'rechecking-btn px-3 py-1 rounded-lg text-sm font-medium transition duration-150 flex-shrink-0 shadow-sm' 
-                : 'recheck-btn text-sm font-medium text-indigo-700 hover:bg-indigo-100 px-3 py-1 rounded-lg border border-indigo-700 transition duration-150 flex-shrink-0 shadow-sm';
+                : 'recheck-btn text-sm font-medium text-[#A51931] hover:bg-[#f2e7e9] px-3 py-1 rounded-lg border border-[#A51931] transition duration-150 flex-shrink-0 shadow-sm';
             
             const recheckBtnContent = isChecking
-                ? `Re-checking... <div class="spinner badge-spinner !w-4 !h-4 !border-l-indigo-700 ml-2"></div>`
+                // Re-check spinner uses Thai Blue
+                ? `Re-checking... <div class="spinner badge-spinner !w-4 !h-4 !border-l-[#241F4D] ml-2"></div>`
                 : `Re-check`;
                 
             // The button is disabled if the process is active
@@ -470,17 +552,41 @@
                 </button>
             `;
 
+            // --- Star Button Logic ---
+            const starColor = isStarred ? 'text-yellow-500' : 'text-gray-400';
+            const starFill = isStarred ? 'currentColor' : 'none';
+            const starStroke = 'currentColor'; // Always use currentColor for stroke/border
+            
+            const starButtonHTML = `
+                <button 
+                    data-id="${linkId}" 
+                    data-is-starred="${isStarred}" 
+                    data-title="${title}"
+                    class="star-toggle-btn flex-shrink-0"
+                    title="${isStarred ? 'Unstar and Unpin' : 'Star and Pin'}"
+                >
+                    <svg class="w-6 h-6 hover:text-yellow-400 transition duration-150 cursor-pointer ${starColor}" 
+                         fill="${starFill}" stroke="${starStroke}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.517 4.674h4.912c.974 0 1.371 1.258.588 1.81l-3.97 2.884 1.517 4.674c.3.921-.755 1.688-1.54 1.136l-3.97-2.884-3.97 2.884c-.785.552-1.84-.215-1.54-1.136l1.517-4.674-3.97-2.884c-.783-.552-.386-1.81.588-1.81h4.912l1.517-4.674z"></path>
+                    </svg>
+                </button>
+            `;
+
 
             const item = existingItem || document.createElement('div');
             item.id = `link-item-${linkId}`;
-            // Use flex-col to allow image preview to take full width below content
-            item.className = "bg-white p-5 rounded-xl shadow-lg flex flex-col gap-4 border-l-4 border-indigo-500"; 
+            // Link border uses Thai Blue accent for un-starred links
+            item.className = `bg-white p-5 rounded-xl shadow-lg flex flex-col gap-4 border-l-4 ${isStarred ? 'border-yellow-500' : 'border-[#241F4D]'}`; 
             
             item.innerHTML = `
                 <div class="flex flex-wrap items-center justify-between gap-4">
-                    <div class="flex-grow min-w-0">
-                        <p class="text-base font-semibold text-gray-900 truncate" title="${title}">${title}</p>
-                        <a href="${url}" target="_blank" rel="noopener noreferrer" class="text-sm text-indigo-600 truncate block hover:underline" title="${url}">${url}</a>
+                    
+                    <div class="flex-grow min-w-0 flex items-start gap-2">
+                        ${starButtonHTML}
+                        <div class="flex flex-col min-w-0">
+                            <p class="text-base font-semibold text-gray-900 truncate" title="${title}">${title}</p>
+                            <a href="${url}" target="_blank" rel="noopener noreferrer" class="text-sm text-[#241F4D] truncate block hover:underline" title="${url}">${url}</a>
+                        </div>
                     </div>
                     
                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-shrink-0 w-full sm:w-auto">
@@ -533,17 +639,23 @@
             return normalized;
         }
 
-        // --- Core Link Check & Update Function (Refactored) ---
+        // --- Core Link Check & Update Function ---
 
         /**
          * Checks a link's status and updates the Firestore document.
          * @param {string} id - Document ID.
          * @param {string} url - The URL to check.
+         * @param {string} title - The link title (used for notification).
          */
-        async function checkAndUpdateLinkStatus(id, url) {
+        async function checkAndUpdateLinkStatus(id, url, title) {
             const linkDocRef = doc(db, PUBLIC_COLLECTION_PATH, id);
             
-            // 1. Immediately set status to "Checking..."
+            // 1. Fetch current status for comparison (Crucial for notification)
+            const docSnap = await getDoc(linkDocRef);
+            // Get the current status from the database before update
+            const oldStatus = docSnap.exists() ? docSnap.data().status : 'Not Found';
+            
+            // 2. Immediately set status to "Checking..."
             try {
                 await updateDoc(linkDocRef, {
                     status: 'Checking...',
@@ -556,19 +668,26 @@
             }
 
             try {
-                // 2. Fetch new status (takes a while)
-                const { status } = await checkLinkStatus(url);
+                // 3. Fetch new status (takes a while)
+                const { status: newStatus } = await checkLinkStatus(url);
                 
-                let updateData = { status: status };
+                let updateData = { status: newStatus };
 
-                // 3. Set workingAt timestamp ONLY if the new status is Working
-                if (status === "Working") {
+                // 4. Set workingAt timestamp ONLY if the new status is Working
+                if (newStatus === "Working") {
                     updateData.workingAt = new Date(); 
+                    
+                    // --- Notification Logic ---
+                    // Check if the link transitioned from a NON-WORKING state to a WORKING state
+                    if (oldStatus !== "Working") {
+                        showNotification(title, "Link is now WORKING!");
+                    }
+                    
                 } else {
                     updateData.workingAt = null;
                 }
 
-                // 4. Update Firestore document with final status and timestamp.
+                // 5. Update Firestore document with final status and timestamp.
                 await updateDoc(linkDocRef, updateData); 
                 
             } catch (error) {
@@ -579,6 +698,30 @@
                     errorMessage.innerHTML = `
                         Failed to re-check link. (Permission Denied).
                     `;
+                }
+            }
+        }
+        
+        // --- Function to toggle star status ---
+        /**
+         * Updates the isStarred field in Firestore.
+         * @param {string} id - Document ID.
+         * @param {boolean} newStarredStatus - The new starred status.
+         */
+        async function toggleStarStatus(id, newStarredStatus) {
+            const linkDocRef = doc(db, PUBLIC_COLLECTION_PATH, id);
+            try {
+                await updateDoc(linkDocRef, {
+                    isStarred: newStarredStatus,
+                });
+            } catch (error) {
+                console.error("Error toggling star status: ", error);
+                if (error.code === "permission-denied" || error.message.includes("permissions")) {
+                     errorMessage.innerHTML = `
+                        Failed to star link. (Permission Denied).
+                    `;
+                } else {
+                    errorMessage.textContent = 'Failed to toggle star status. Check console for details.';
                 }
             }
         }
@@ -633,6 +776,7 @@
                     createdAt: new Date(),
                     status: 'Checking...', 
                     workingAt: null, 
+                    isStarred: false, // NEW: Default to not starred
                 };
 
                 // Add the initial document.
@@ -643,7 +787,7 @@
                 linkUrlInput.value = '';
                 
                 // Perform the check and final update
-                await checkAndUpdateLinkStatus(newDocRef.id, normalizedUrl);
+                await checkAndUpdateLinkStatus(newDocRef.id, normalizedUrl, title);
 
             } catch (error) {
                 console.error("Error adding link to Firestore: ", error);
@@ -662,14 +806,32 @@
         }
 
         /**
-         * Handles clicks on "Remove" or "Re-check" buttons.
+         * Handles clicks on "Remove", "Re-check", or "Star" buttons.
          */
         async function handleListClick(e) {
             const target = e.target;
             
             const docPath = PUBLIC_COLLECTION_PATH; 
 
-            // Handle Remove (uses the custom modal)
+            // --- Handle Star Toggle ---
+            const starBtn = target.closest('.star-toggle-btn');
+            if (starBtn) {
+                const id = starBtn.dataset.id;
+                // Get the current status from the data attribute (which is a string)
+                const currentStatusString = starBtn.dataset.isStarred; 
+                // Convert string "true" to boolean true
+                const isCurrentlyStarred = currentStatusString === 'true'; 
+                const newStatus = !isCurrentlyStarred;
+                
+                // Call the Firestore update function
+                await toggleStarStatus(id, newStatus);
+                
+                // Stop further processing
+                return;
+            }
+
+
+            // --- Handle Remove (uses the custom modal) ---
             if (target.classList.contains('remove-btn')) {
                 const id = target.dataset.id;
                 const title = target.dataset.title; // Get the title of the link
@@ -698,7 +860,7 @@
                 return;
             }
 
-            // Handle Re-check
+            // --- Handle Re-check ---
             // Use closest to ensure we capture clicks on the spinner inside the button too
             const recheckBtn = target.closest('.recheck-btn'); 
             if (recheckBtn) {
@@ -706,12 +868,16 @@
                 const url = recheckBtn.dataset.url;
                 if (!id || !url) return;
                 
+                // Find the link title from the cache
+                const link = linksDataCache.find(l => l.id === id);
+                const title = link ? link.title : 'Link';
+                
                 // Use the refactored function
-                await checkAndUpdateLinkStatus(id, url);
+                await checkAndUpdateLinkStatus(id, url, title);
             }
         }
         
-        // --- NEW: Function to check all links on initial load ---
+        // --- Function to check all links on initial load ---
         /**
          * Executes a one-time full check on ALL links when the page loads/user is authenticated.
          */
@@ -727,7 +893,7 @@
             for (const link of linksDataCache) {
                 console.log(`[Initial Load Check] Checking: ${link.title} (${link.id})`);
                 // Check ALL links, even if they are currently marked 'Working'
-                await checkAndUpdateLinkStatus(link.id, link.url); 
+                await checkAndUpdateLinkStatus(link.id, link.url, link.title); 
                 // Small delay to space out requests
                 await new Promise(resolve => setTimeout(resolve, 500)); 
             }
@@ -767,7 +933,7 @@
                     console.log(`[Auto-Recheck] Checking: ${link.title} (${link.id})`);
                     // The checkAndUpdateLinkStatus handles setting the status to 'Checking...' first,
                     // which prevents another auto-recheck from picking it up immediately.
-                    await checkAndUpdateLinkStatus(link.id, link.url); 
+                    await checkAndUpdateLinkStatus(link.id, link.url, link.title); 
                     // Small delay to space out requests
                     await new Promise(resolve => setTimeout(resolve, 500)); 
                 }
@@ -806,8 +972,17 @@
                     return;
                 }
 
-                // Sort by creation date descending (newest first)
+                // NEW: Sort: 1. Starred first (true > false). 2. Creation date descending (newest first)
                 dbLinks.sort((a, b) => {
+                    const starA = a.isStarred ? 1 : 0;
+                    const starB = b.isStarred ? 1 : 0;
+                    
+                    // Primary sort: Starred status (true first, so 1 > 0 is -1, 0 > 1 is 1)
+                    if (starA !== starB) {
+                        return starB - starA; // Sort descending by star status
+                    }
+                    
+                    // Secondary sort: Creation date descending (newest first)
                     const timeA = a.createdAt?.toDate()?.getTime() || 0;
                     const timeB = b.createdAt?.toDate()?.getTime() || 0;
                     return timeB - timeA;
@@ -833,19 +1008,9 @@
                 });
 
                 // Final sort after adding/updating all items to maintain order
-                const sortedItems = Array.from(linksContainer.children).sort((a, b) => {
-                    const idA = a.id.replace('link-item-', '');
-                    const idB = b.id.replace('link-item-', '');
-                    
-                    const linkA = dbLinks.find(l => l.id === idA);
-                    const linkB = dbLinks.find(l => l.id === idB);
-
-                    const timeA = linkA?.createdAt?.toDate()?.getTime() || 0;
-                    const timeB = linkB?.createdAt?.toDate()?.getTime() || 0;
-                    
-                    return timeB - timeA;
-                });
-
+                // We re-sort the DOM nodes based on the already sorted dbLinks array
+                const sortedItems = dbLinks.map(link => document.getElementById(`link-item-${link.id}`)).filter(item => item);
+                
                 // Re-append sorted items in the correct order
                 sortedItems.forEach(item => linksContainer.appendChild(item));
 
@@ -897,9 +1062,9 @@
                         // Set the collection reference to the public path
                         linksCollectionRef = collection(db, PUBLIC_COLLECTION_PATH);
                         
-                        // Build user info display with adjusted formatting
+                        // Build user info display with adjusted formatting (Thai Blue background)
                         const authStatus = user.isAnonymous 
-                            ? `<span class="bg-indigo-600 text-white persistence-status">Storage: (Your Data is Saved Successfully)</span>`
+                            ? `<span class="bg-[#241F4D] text-white persistence-status">Storage: (Your Data is Saved Successfully)</span>`
                             : `<span class="bg-green-600 text-white persistence-status">Storage: (Your Data is Saved Successfully)</span>`;
 
                         // Added max-w-full and text-wrap to ensure the user ID doesn't stretch the layout
@@ -907,6 +1072,7 @@
                         
                         // Setup form and list listeners
                         addLinkForm.addEventListener('submit', handleAddLink);
+                        // Listener now handles Star, Re-check, and Remove
                         linksContainer.addEventListener('click', handleListClick);
 
                         // Start listening for saved data (updates linksDataCache)
