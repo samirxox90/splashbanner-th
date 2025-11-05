@@ -420,7 +420,6 @@ console.log(`Image failed to load for link ${linkId}. Keeping preview bar hidden
 const url = link.url;
             const title = link.title || 'Untitled Link';
             const status = link.status || 'Checking...';
-            // REMOVED: const workingAt = link.workingAt; 
 
             const existingItem = document.getElementById(`link-item-${linkId}`);
             
@@ -447,9 +446,6 @@ let statusText = status;
 // If status is "Checking...", show the spinner
                 statusText = `<div class="spinner badge-spinner !border-l-indigo-700"></div> ${status}`;
 }
-
-            // --- Global Time Display Logic ---
-            // REMOVED: globalTimeDisplay logic 
             
             // --- Re-check Button Logic ---
             // The button will be disabled and styled as rechecking if the process is active
@@ -525,9 +521,14 @@ py-1 rounded-lg border border-red-700 transition duration-150 flex-shrink-0 shad
                     <p id="image-status-${linkId}" class="text-xs mt-2 text-red-500 hidden"></p>
                 </div>
             `;
-// --- Conditional Image Load Logic ---
-            // REMOVED: Conditional Image Load with setTimeout 
-            // The check is now done immediately after the status update in checkAndUpdateLinkStatus.
+
+            // Conditional Image Load Logic: Only run on render if status is "Working"
+            // The check is run by an initial call in checkAndUpdateLinkStatus (after successful check), 
+            // but needs to run here if the document is loaded *already* working.
+            if (status === "Working") {
+                // Use a short delay to ensure the DOM elements exist after innerHTML is set
+                setTimeout(() => checkAndDisplayImage(linkId, url), 50);
+            }
 
             return item;
 }
@@ -556,7 +557,6 @@ if (!/^https?:\/\//i.test(normalized)) {
             try {
                 await updateDoc(linkDocRef, {
                     status: 'Checking...',
-                    // REMOVED: workingAt: null
                 
 });
             } catch (error) {
@@ -577,13 +577,13 @@ if (!/^https?:\/\//i.test(normalized)) {
                     checkAndDisplayImage(id, url); 
                 }
 
-                // 4. Update Firestore document with final status.
+                // 3. Update Firestore document with final status.
 await updateDoc(linkDocRef, updateData); 
                 
             } catch (error) {
                 console.error(`Error processing or updating document status for link ${id}: `, error);
 // Use only "Not Working" for any final failure
-                await updateDoc(linkDocRef, { status: "Not Working" }); // REMOVED: workingAt: null
+                await updateDoc(linkDocRef, { status: "Not Working" });
 if (error.code === "permission-denied" || error.message.includes("permissions")) {
                     errorMessage.innerHTML = `
                         Failed to re-check link.
@@ -642,7 +642,6 @@ submitButton.disabled = true;
        
              createdAt: new Date(),
                     status: 'Checking...', 
-                    // REMOVED: workingAt: null, 
                 };
 // Add the initial document.
                 const newDocRef = await addDoc(linksCollectionRef, linkData);
@@ -745,41 +744,37 @@ return;
 
 
         /**
-         * Iterates through cached links and re-checks those that are NOT 'Working'.
-* This function is used for the periodic 5-minute check.
-*/
-        async function autoRecheckNonWorkingLinks() {
+         * Iterates through all cached links and re-checks them.
+         * This function is used for the periodic 5-minute check.
+         */
+        async function autoRecheckAllLinks() {
             console.log(`[Auto-Recheck] Starting periodic check for ${linksDataCache.length} links...`);
-// Use a set to track IDs that are currently being checked to prevent duplicate checks
+            // Use a set to track IDs that are currently being checked to prevent duplicate checks
             const activeChecks = new Set();
-// Filter for links that are not currently 'Working' and not already being checked
-            const linksToRecheck = linksDataCache.filter(link => 
-                !link.status || 
-                // Only recheck if status is "Not Working" or if it is stuck on "Checking..." 
-                (link.status !== 'Working' && link.status 
-!== 'Checking...')
-            );
-if (linksToRecheck.length === 0) {
-                console.log("[Auto-Recheck] No non-working links found to check.");
-return;
+            // Assign all links in the cache to be re-checked
+            const linksToRecheck = linksDataCache;
+
+            if (linksToRecheck.length === 0) {
+                console.log("[Auto-Recheck] No links found to check.");
+                return;
             }
 
             console.log(`[Auto-Recheck] Found ${linksToRecheck.length} links to re-check.`);
-// Execute checks sequentially to avoid overwhelming the proxy/network
+            // Execute checks sequentially to avoid overwhelming the proxy/network
             for (const link of linksToRecheck) {
                 // Re-check only if the ID isn't already in the active checks set
                 if (!activeChecks.has(link.id)) {
                     activeChecks.add(link.id);
-console.log(`[Auto-Recheck] Checking: ${link.title} (${link.id})`);
+                    console.log(`[Auto-Recheck] Checking: ${link.title} (${link.id})`);
                     // The checkAndUpdateLinkStatus handles setting the status to 'Checking...' first,
                     // which prevents another auto-recheck from picking it up immediately.
-await checkAndUpdateLinkStatus(link.id, link.url); 
+                    await checkAndUpdateLinkStatus(link.id, link.url); 
                     // Small delay to space out requests
                     await new Promise(resolve => setTimeout(resolve, 500));
-}
+                }
             }
             console.log("[Auto-Recheck] Periodic check complete.");
-}
+        }
         
         /**
          * Sets up the real-time listener for links.
@@ -928,9 +923,9 @@ linksContainer.addEventListener('click', handleListClick);
                         setupSnapshotListener();
 // 1. Immediately run a FULL check on all links on load (5s delay for Firestore load)
                         setTimeout(autoCheckAllLinksOnLoad, 5000);
-// 2. Set up the recurring 5-minute check for ONLY non-working links
-                        setInterval(autoRecheckNonWorkingLinks, AUTO_RECHECK_INTERVAL);
-console.log(`[Auto-Recheck] Periodic check loop started. Interval: ${AUTO_RECHECK_INTERVAL / 1000} seconds.`);
+// 2. Set up the recurring 5-minute check for ALL links
+                        setInterval(autoRecheckAllLinks, AUTO_RECHECK_INTERVAL);
+console.log(`[Auto-Recheck] Periodic check loop started. Interval: ${AUTO_RECHECK_INTERVAL / 1000} seconds. (Checking ALL links)`);
 } else {
                         console.log("No user signed in yet.");
 if (loadingLinks) {
