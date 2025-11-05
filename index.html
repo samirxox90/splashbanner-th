@@ -137,7 +137,7 @@
     <div class="container mx-auto p-4 md:p-8 max-w-2xl">
         <header class="mb-10 pt-4">
             <h1 class="text-4xl font-extrabold tracking-tight animated-title">FF Link Checker</h1>
-            <p class="text-lg text-gray-600 mt-2">
+            <p class="text-lg text-gray-600 mt-2">Note :- Only You Can See Your Added Links.</p>
             <div id="user-info">Auth Status: Loading...</div>
         </header>
 
@@ -244,7 +244,7 @@
         let userId;
         let linksCollectionRef;
         let currentDeleteCallback = null; // Stores the function to call on confirmation
-        let linksDataCache = []; // NEW: Cache to store the latest links data for the auto-checker
+        let linksDataCache = []; // Cache to store the latest links data for the auto-checker
         
         // The interval for the auto-recheck (5 minutes = 300,000 milliseconds)
         const AUTO_RECHECK_INTERVAL = 5 * 60 * 1000; 
@@ -339,7 +339,7 @@
             } catch (error) {
                 clearTimeout(timeout);
                 console.error("Link check failed completely (Network/Proxy/CORS issue):", url, error);
-                // NEW: Use only "Not Working" for network errors
+                // Use only "Not Working" for network errors
                 status = "Not Working"; 
             }
             return { status };
@@ -356,6 +356,9 @@
 
             if (!container || !imgElement || !statusElement) return;
 
+            // FIX: Use the CORS proxy URL to bypass cross-origin restrictions
+            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+            
             // Start by hiding the entire container
             container.classList.add('hidden'); 
 
@@ -365,23 +368,25 @@
             statusElement.classList.add('hidden');
 
             const img = new Image();
-            img.crossOrigin = "Anonymous"; 
+            // crossOrigin must be set to 'anonymous' when fetching proxied content
+            img.crossOrigin = "anonymous"; 
             
-            // Success handler: Image loaded
+            // Success handler: Image loaded (only fires if the proxy load is successful)
             img.onload = function() {
-                imgElement.src = url; 
+                // Set the DOM element's source to the PROXIED URL
+                imgElement.src = proxyUrl; 
                 // ONLY show the container if the image loads successfully
                 container.classList.remove('hidden'); 
             };
 
-            // Error handler: Image failed to load (404, not an image, or CORS blocked)
+            // Error handler: Image failed to load (404, not an image, or failed via proxy)
             img.onerror = function() {
                 // If it fails, keep the container hidden.
                 console.log(`Image failed to load for link ${linkId}. Keeping preview bar hidden.`);
             };
             
-            // Attempt to load the image
-            img.src = url;
+            // Attempt to load the image using the PROXIED URL
+            img.src = proxyUrl; 
         }
 
         /**
@@ -568,7 +573,7 @@
                 
             } catch (error) {
                 console.error(`Error processing or updating document status for link ${id}: `, error);
-                // NEW: Use only "Not Working" for any final failure
+                // Use only "Not Working" for any final failure
                 await updateDoc(linkDocRef, { status: "Not Working", workingAt: null });
                 if (error.code === "permission-denied" || error.message.includes("permissions")) {
                     errorMessage.innerHTML = `
@@ -705,9 +710,34 @@
                 await checkAndUpdateLinkStatus(id, url);
             }
         }
+        
+        // --- NEW: Function to check all links on initial load ---
+        /**
+         * Executes a one-time full check on ALL links when the page loads/user is authenticated.
+         */
+        async function autoCheckAllLinksOnLoad() {
+            console.log(`[Initial Load Check] Starting full check for ${linksDataCache.length} links...`);
+
+            if (linksDataCache.length === 0) {
+                console.log("[Initial Load Check] No links found to check.");
+                return;
+            }
+            
+            // Execute checks sequentially to avoid overwhelming the proxy/network
+            for (const link of linksDataCache) {
+                console.log(`[Initial Load Check] Checking: ${link.title} (${link.id})`);
+                // Check ALL links, even if they are currently marked 'Working'
+                await checkAndUpdateLinkStatus(link.id, link.url); 
+                // Small delay to space out requests
+                await new Promise(resolve => setTimeout(resolve, 500)); 
+            }
+            console.log("[Initial Load Check] Full check complete.");
+        }
+
 
         /**
          * Iterates through cached links and re-checks those that are NOT 'Working'.
+         * This function is used for the periodic 5-minute check.
          */
         async function autoRecheckNonWorkingLinks() {
             console.log(`[Auto-Recheck] Starting periodic check for ${linksDataCache.length} links...`);
@@ -745,18 +775,6 @@
             console.log("[Auto-Recheck] Periodic check complete.");
         }
         
-        /**
-         * Sets up the continuous timer for auto-rechecking.
-         */
-        function startAutoRecheckLoop() {
-            // Run the first check shortly after init
-            setTimeout(autoRecheckNonWorkingLinks, 10000); 
-            // Then set the recurring interval
-            setInterval(autoRecheckNonWorkingLinks, AUTO_RECHECK_INTERVAL);
-            console.log(`[Auto-Recheck] Auto-recheck loop started. Interval: ${AUTO_RECHECK_INTERVAL / 1000} seconds.`);
-        }
-
-
         /**
          * Sets up the real-time listener for links.
          */
@@ -891,11 +909,16 @@
                         addLinkForm.addEventListener('submit', handleAddLink);
                         linksContainer.addEventListener('click', handleListClick);
 
-                        // Start listening for saved data
+                        // Start listening for saved data (updates linksDataCache)
                         setupSnapshotListener();
                         
-                        // Start the automatic re-check loop
-                        startAutoRecheckLoop();
+                        // 1. Immediately run a FULL check on all links on load (5s delay for Firestore load)
+                        setTimeout(autoCheckAllLinksOnLoad, 5000); 
+
+                        // 2. Set up the recurring 5-minute check for ONLY non-working links
+                        setInterval(autoRecheckNonWorkingLinks, AUTO_RECHECK_INTERVAL);
+                        console.log(`[Auto-Recheck] Periodic check loop started. Interval: ${AUTO_RECHECK_INTERVAL / 1000} seconds.`);
+
                     } else {
                         console.log("No user signed in yet.");
                         if (loadingLinks) {
